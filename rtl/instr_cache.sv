@@ -164,7 +164,7 @@ module icache_nonblocking (
                 //--------------------------------------------
                 // REQ: hold mem_req until the arbiter accepts
                 // (mem_ready pulse).  Do not re-latch address
-                // here �" the transaction is already in flight.
+                // here â€" the transaction is already in flight.
                 //--------------------------------------------
                 REQ: begin
                     if (mem_ready) begin
