@@ -1,25 +1,5 @@
 `timescale 1ns / 1ps
 
-// ============================================================
-// HazardUnit - Fixed
-//
-// KEY FIX: On a load-use stall, the correct behavior is:
-//   - StallF = 1  : freeze PC (don't fetch new instruction)
-//   - StallD = 1  : freeze IF/ID register (keep current instr in ID)
-//   - FlushE = 1  : insert bubble into EX (zero out ID/IE outputs)
-//   - StallID_IE  : NEW - must NOT freeze ID/IE on load-use.
-//                   ID/IE must be allowed to latch the bubble (all zeros).
-//
-// The original code passed StallD into ID/IE's enable, which prevented
-// the bubble from propagating. The dependent instruction stayed frozen
-// in ID/IE, and on the next cycle it read s1 from ALUResultM (the load
-// ADDRESS, not the loaded DATA), producing a wrong result.
-//
-// Fix: expose a separate StallID_IE output that is 0 on load-use stall
-// (so ID/IE latches the FlushE bubble) and 1 only on cache stalls
-// (where the whole pipe must freeze including ID/IE).
-// ============================================================
-
 module HazardUnit(
     input  logic [4:0] Rs1D,
     input  logic [4:0] Rs2D,
