@@ -2,20 +2,8 @@
 
  
 // ============================================================
-//  Cache Latency Verification Testbench for rvhazard
-//  CORRECTED VERSION
-//  Fixes:
-//   1. Clock initialised in its own initial block (no race with always toggle)
-//   2. `checked` flag initialised in a proper initial block
-//   3. Stall-streak warning repeats every 5 cycles of continuous stall
-//   4. I-Cache hit/miss counting is mutually exclusive per cycle
-//   5. D-Cache IDLE state encoding extracted to a localparameterter
-//   6. real' casts replaced with intermediate real variables
-//   7. Reset wait uses @(posedge clk) repeats instead of bare delays
-//   8. AXI burst-start stale-register issue documented and guarded
-// ============================================================
- 
-module rvhazard_cache_tb;
+//  Cache Latency Verification Testbench for cpu
+module cpu_tb;
  
     // --------------------------------------------------------
     // D-Cache FSM IDLE state encoding
@@ -29,15 +17,13 @@ module rvhazard_cache_tb;
     reg clk;
     reg reset;
  
-    // FIX 1: initialise clock in its own block so the always-toggle
-    // never races against the initial block's assignment.
     initial clk = 1'b0;
     always #5 clk = ~clk;   // 10 ns period
  
     // --------------------------------------------------------
     // DUT
     // --------------------------------------------------------
-    rvhazard dut (
+    cpu dut (
         .clk   (clk),
         .reset (reset)
     );
@@ -113,7 +99,6 @@ module rvhazard_cache_tb;
     reg prev_mem_read;
     reg prev_mem_write;
  
-    // FIX 2: `checked` properly initialised in a dedicated initial block
     reg checked;
     initial checked = 1'b0;
  
@@ -126,14 +111,6 @@ module rvhazard_cache_tb;
         else
             total_cycles <= total_cycles + 1;
     end
- 
-    // --------------------------------------------------------
-    // I-Cache monitor
-    // FIX 4: hit and miss branches are now mutually exclusive -
-    //        a miss is detected only when icache_mem_req is newly
-    //        asserted; a hit is counted only when no miss is pending
-    //        and no mem_req is active, preventing double-counting.
-    // --------------------------------------------------------
     always @(posedge clk) begin
         if (reset) begin
             icache_total_req     <= 0;
@@ -178,10 +155,6 @@ module rvhazard_cache_tb;
         end
     end
  
-    // --------------------------------------------------------
-    // D-Cache monitor
-    // FIX 5: IDLE state uses the localparam DCACHE_IDLE
-    // --------------------------------------------------------
     always @(posedge clk) begin
         if (reset) begin
             dcache_total_req     <= 0;
@@ -224,11 +197,6 @@ module rvhazard_cache_tb;
         end
     end
  
-    // --------------------------------------------------------
-    // AXI burst latency monitor
-    // FIX 8: axi_burst_active guards against measuring latency
-    //        when axi_burst_start is stale (no burst in flight).
-    // --------------------------------------------------------
     always @(posedge clk) begin
         if (reset) begin
             axi_burst_count   <= 0;
@@ -300,11 +268,7 @@ module rvhazard_cache_tb;
     end
  
     // --------------------------------------------------------
-    // Stall streak watcher
-    // FIX 3: Warning fires every 5 cycles of continuous stall,
-    //        not just the first time the streak reaches 5.
-    //        Achieved by warning when (stall_streak % 5 == 4).
-    // --------------------------------------------------------
+   
     always @(posedge clk) begin
         if (reset) begin
             stall_streak <= 0;
@@ -321,11 +285,7 @@ module rvhazard_cache_tb;
         end
     end
  
-    // --------------------------------------------------------
-    // Snapshot task
-    // FIX 6: real'(...) replaced with intermediate real variables
-    //        for broader simulator compatibility.
-    // --------------------------------------------------------
+  
     task print_snapshot;
         real r_icache_hits, r_icache_total, r_icache_misses;
         real r_dcache_hits, r_dcache_total;
@@ -408,11 +368,7 @@ module rvhazard_cache_tb;
         end
     endtask
  
-    // --------------------------------------------------------
-    // MAIN Execution
-    // FIX 7: Reset de-assertion now uses @(posedge clk) repeats
-    //        rather than bare time delays, ensuring clock alignment.
-    // --------------------------------------------------------
+  
     initial begin
         // clk is initialised at file scope (initial clk = 0 above)
         reset = 1'b1;
